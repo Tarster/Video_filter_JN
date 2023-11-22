@@ -1,12 +1,18 @@
 import numpy as np
 
 import cv2 as cv
+import os
 
-test_file = cv.imread(r'Video_filter_JN\background_images\pexels-aleksandar-pasaric-1619569.jpg')
-# print(test_file)
-Gaussian = cv.GaussianBlur(test_file,(21,21),0)
-resized = cv.resize(Gaussian, (300,300))
-cv.imshow('test',resized)
-cv.waitKey(0)
-cv.destroyAllWindows()
-          
+directory = r'Video_filter_JN\background_images' 
+# iterate over files in
+# that directory
+count = 0
+for filename in os.listdir(directory):
+    f = os.path.join(directory, filename)
+    # checking if it is a file
+    test_file = cv.imread(f)
+    # print(test_file)
+    Gaussian = cv.GaussianBlur(test_file,(31,31),0)
+    resized = cv.resize(Gaussian, (960,540))
+    cv.imwrite(directory + "/result/" + "background_{}.jpg".format(count), resized)
+    count += 1

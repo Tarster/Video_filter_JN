@@ -2,6 +2,7 @@ import numpy as np
 import cv2 as cv
 from functools import partial
 from model_class import PPHumanSeg
+import os
 
 class filter_creator(object):
     """
@@ -11,22 +12,23 @@ class filter_creator(object):
     """
 
     def __init__(self):
-        self.pp_human_modal = PPHumanSeg(modelPath=r'Video_filter_JN/models/human_segmentation_pphumanseg_2023mar.onnx',
+        self.pp_human_model = PPHumanSeg(modelPath=r'Video_filter_JN/models/human_segmentation_pphumanseg_2023mar.onnx',
                                     backendId=cv.dnn.DNN_BACKEND_OPENCV, targetId=cv.dnn.DNN_TARGET_CPU)
         # self.yunet_model = YuNet('model/face_detection_yunet_2023mar.onnx',backendId=cv.dnn.DNN_BACKEND_OPENCV, targetId=cv.dnn.DNN_TARGET_CPU)
         
         # Configure the model
-        self._model = self.pp_human_modal
+        self._model = self.pp_human_model
         self.weight = 0.6
         self.window = ''
         self.filter_selected = 1
         self.enable_fps = True
         self.background_image_index = 0
-        self.background_image = cv.imread('Video_filter_JN/background.jpg')
+        
+        self.background_image_path_list = []
         self.kernel_size = 11
         self.func_name = self.create_filter
         self.background_enable = False
-
+        
         # key dict
         self.key_mapper = {
             ord('d'): self.d_press,
@@ -42,6 +44,16 @@ class filter_creator(object):
             ord('k'): self.change_kernel_size
         }
 
+        #Load all the backgorund images
+        self.directory = r'Video_filter_JN\background_images\result'
+        for filename in os.listdir(self.directory ):
+            f = os.path.join(self.directory , filename)
+            # checking if it is a file
+            if os.path.isfile(f):
+                self.background_image_path_list.append(f)
+        
+        self.background_image = cv.imread(self.background_image_path_list[self.background_image_index])
+            
     def d_press(self):
         quit()
         # return "quit"
@@ -104,7 +116,7 @@ class filter_creator(object):
                  display_width,
                  display_height)
                 )
-   
+     
     def create_filter(self, frame, background_change = False):
         """This function will create the background blur and change the background to any image.
         Args:
@@ -116,12 +128,12 @@ class filter_creator(object):
         
         # print(result.shape)
         if background_change:
-            final_frame = np.where(result == 0, result_blur, frame)
+            final_frame = np.where(result == 0, self.background_image, frame)
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
             return final_frame
         else:
             # Blur the captured frame
-            print(self.kernel_size)
+            # print(self.kernel_size)
             result_blur = cv.GaussianBlur(frame, (self.kernel_size, self.kernel_size),cv.BORDER_DEFAULT)
             final_frame = np.where(result == 0, result_blur, frame)
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
@@ -129,7 +141,7 @@ class filter_creator(object):
             
     def switch_model(self):
         if self.filter_selected == 1 or self.filter_selected == 2:
-            self._model = self.pp_human_modal._model
+            self._model = self.pp_human_model
         if self.filter_selected == 3 or self.filter_selected == 4:
             print('Not implemented yet')
            
@@ -177,7 +189,7 @@ class filter_creator(object):
                         previous_filter = self.filter_selected
                         self.switch_model()
                         self.window_title = 'Filter ' + str(self.filter_selected)
-                        cv.setWindowTitle(self.window_title)
+                        cv.setWindowTitle(winname="Demo", title=self.window_title)
                         if self.filter_selected == 1:
                             self.func_name = self.create_filter
                             self.background_enable = False
@@ -200,7 +212,7 @@ class filter_creator(object):
                     
                     if self.enable_fps is not None:
                         cv.putText(result, 'FPS: {:.2f}'.format(tm.getFPS()), (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
-                    cv.imshow('PPHumanSeg Demo', result)
+                    cv.imshow("Demo", result)
                     tm.reset()
 
         except KeyboardInterrupt:
